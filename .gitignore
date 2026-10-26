@@ -2,3 +2,4 @@ node_modules/
 .sites-runtime/
 *.tar.gz
 .playwright-mcp/
+.vercel/

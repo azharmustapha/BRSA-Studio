@@ -30,7 +30,7 @@ npm test
 npm run build
 ```
 
-Deploy `dist/` to any static host, or publish through the Sites configuration in `.openai/hosting.json`. Run through HTTP rather than opening `index.html` directly, because PDF workers and font loading need it.
+Deploy `dist/` to any static host, or publish through the Sites configuration in `.openai/hosting.json`. For Vercel, import this GitHub repository; `vercel.json` configures the build and the `dist/` output directory. Run through HTTP rather than opening `index.html` directly, because PDF workers and font loading need it.
 
 ## Project structure
 

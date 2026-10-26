@@ -1,0 +1,9 @@
+{
+  "name": "certificate-studio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {"build": "node build.mjs", "test": "node --test tests/*.test.mjs", "dev": "node server.mjs"},
+  "dependencies": {"jszip": "3.10.1", "pdf-lib": "1.17.1", "pdfjs-dist": "4.10.38", "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"},
+  "devDependencies": {"esbuild": "0.25.0"}
+}

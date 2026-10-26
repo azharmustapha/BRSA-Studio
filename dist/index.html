@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#162d46"><meta name="description" content="Turn your certificate design and participant list into personalized program certificates."><title>BRSA Studio</title><link rel="icon" type="image/svg+xml" href="./assets/jata-negara.svg"><link rel="stylesheet" href="./style.css"></head>
+<body>
+<svg class="svg-defs" xmlns="http://www.w3.org/2000/svg"><defs>
+<symbol id="i-award" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="m8.5 12-1 9 4.5-3 4.5 3-1-9"/></symbol>
+<symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H5v18h14V8l-5-5v5h5M8 13h8m-8 4h6"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3m1-17a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 5v3"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v13m-5-5 5 5 5-5M4 17v4h16v-4"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+<symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 20V5h7l2 3h9v12Z"/></symbol>
+<symbol id="i-save" viewBox="0 0 24 24"><path d="M4 3h13l3 3v15H4ZM8 3v6h8V3M8 21v-7h8v7"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+</defs></svg>
+<header class="app-header">
+ <a class="brand" href="./" aria-label="BRSA Studio home"><span class="brand-mark"><img src="./assets/jata-negara.svg" alt="Jata Negara Malaysia" width="64" height="52"></span><span>BRSA <strong>Studio</strong><small>Certificate workspace</small></span></a>
+ <div class="local-note"><span class="green-dot"></span> Your files stay on this device</div>
+ <nav class="project-actions" aria-label="Project actions">
+ <button class="header-button" id="openProject" aria-label="Open project" title="Open a saved project"><svg aria-hidden="true"><use href="#i-folder"/></svg><span>Open project</span></button>
+ <button class="header-button save-button" id="saveProject" aria-label="Save project" title="Download your project to save your work"><svg aria-hidden="true"><use href="#i-save"/></svg><span>Save project</span></button>
+ <button class="help-button" id="helpBtn" aria-label="How it works" title="How it works">?</button>
+ </nav>
+</header>
+<main id="mainContent">
+ <div class="page-content">
+ <div class="page-heading"><div><h1 id="pageTitle">Design your certificate</h1><p id="pageDescription">Make it personal. Start with a design, then add your participants.</p></div><button class="primary" id="topExport"><svg aria-hidden="true"><use href="#i-download"/></svg>Review & export</button></div>
+ <div class="project-line"><label for="projectName">Project name</label><input id="projectName" value="Program certificates" maxlength="80" aria-label="Project name"><span class="badge" id="projectBadge">Sample project</span><span class="project-hint" id="recipientCount">3 participants</span></div>
+ <nav class="steps" aria-label="Certificate workflow"><button class="step active" data-tab="design" aria-current="step" aria-controls="designPanel"><span class="step-number">1</span><span class="step-copy"><strong>Design certificate</strong><small>Template & text fields</small></span></button><button class="step" data-tab="recipients" aria-controls="recipientsPanel"><span class="step-number">2</span><span class="step-copy"><strong>Add participants</strong><small>Import & check your list</small></span></button><button class="step" data-tab="export" aria-controls="exportPanel"><span class="step-number">3</span><span class="step-copy"><strong>Review & export</strong><small>Download your certificates</small></span></button></nav>
+ <section id="designPanel" class="tab-panel">
+  <div class="workbench">
+   <aside class="tools panel" aria-label="Design and fields"><div class="panel-heading"><h2>Certificate design</h2><svg aria-hidden="true"><use href="#i-file"/></svg></div>
+    <button class="upload-box" id="templateUpload"><span class="upload-icon"><svg aria-hidden="true"><use href="#i-upload"/></svg></span><strong>Upload your design</strong><span>PNG, JPG or PDF · Max. 15 MB</span></button>
+    <div class="file-info"><span class="file-icon"><svg><use href="#i-file"/></svg></span><span><strong id="templateName">Studio sample</strong><small id="templateDetail">A4 landscape · ready to edit</small></span></div>
+    <p class="tip">Choose a design with space for names. Existing text stays in place.</p>
+    <div class="section-title"><h3>Text fields</h3><span id="fieldCount">3</span></div>
+    <div class="field-list" id="fieldList"></div>
+    <button class="outline full" id="addField"><svg><use href="#i-plus"/></svg>Add text field</button>
+   </aside>
+   <div class="preview-workspace"><div class="canvas-toolbar"><span class="preview-title"><span class="green-dot"></span> Live preview</span><span id="templateSize">297 × 210 mm</span><button class="preview-toggle" id="toggleGuides" aria-label="Preview without guides" aria-pressed="false" title="Hide editing guides to see the finished certificate"><svg aria-hidden="true"><use href="#i-eye"/></svg><span>Hide guides</span></button></div>
+    <div class="canvas-area" id="canvasArea"><div class="certificate" id="certificate"><canvas id="background" aria-label="Certificate background"></canvas><div id="fieldOverlay"></div></div></div>
+    <div class="preview-bottom"><span class="preview-person"><svg><use href="#i-users"/></svg><span>Previewing</span></span><button class="icon-button" id="prevRecipient" aria-label="Previous participant">‹</button><select id="previewRecipient" aria-label="Preview participant"></select><button class="icon-button" id="nextRecipient" aria-label="Next participant">›</button><span id="previewIndex">1 of 3</span></div>
+    <div class="canvas-caption" id="canvasHint"><svg aria-hidden="true"><use href="#i-check"/></svg><span>Drag text to position it. Long names resize to fit.</span></div>
+   </div>
+   <aside class="inspector panel" aria-label="Selected text field settings"><div class="panel-heading"><h2>Text settings</h2><span class="text-symbol" aria-hidden="true">Tt</span></div><div id="inspectorBody">
+    <div class="setting-group"><label for="fieldLabel">Field label</label><input id="fieldLabel" maxlength="60"></div>
+    <div class="setting-group"><label for="fieldSource">Text source</label><select id="fieldSource"></select><div id="columnHint" class="source-hint">From your participant list.</div></div>
+    <div id="fixedTextGroup" class="setting-group"><label for="fixedText">Your text</label><textarea id="fixedText" rows="3" maxlength="500"></textarea><small>Use {{Column name}} or {{number}}.</small></div>
+    <div class="setting-group"><label for="fontSelect">Typeface</label><select id="fontSelect"><option value="serif">Times Roman</option><option value="sans">Helvetica</option></select></div>
+    <div class="form-row setting-group"><div><label for="fontSize">Size (pt)</label><input id="fontSize" type="number" min="6" max="120"></div><div><label for="textColor">Color</label><input id="textColor" type="color" value="#162d46"></div></div>
+    <div class="setting-group"><label id="alignmentLabel">Alignment</label><div class="segmented" id="alignment" role="group" aria-labelledby="alignmentLabel"><button data-align="left" aria-label="Align left">Left</button><button data-align="center" aria-label="Align center">Center</button><button data-align="right" aria-label="Align right">Right</button></div></div>
+    <details class="setting-group position-settings"><summary>Position & width</summary><div class="form-row"><div><label for="fieldX">X position (%)</label><input id="fieldX" type="number" min="0" max="100" step="0.1"></div><div><label for="fieldY">Y position (%)</label><input id="fieldY" type="number" min="0" max="100" step="0.1"></div></div><div class="width-setting"><label for="fieldWidth" class="width-label">Text width <output id="fieldWidthValue" for="fieldWidth">75%</output></label><input id="fieldWidth" type="range" min="5" max="100" step="1"><small class="muted">Text automatically fits this width.</small></div></details>
+    <button class="danger-text" id="deleteField">Remove field</button>
+   </div><div id="noField" hidden><p>Select a field on your certificate, or add a new one.</p></div></aside>
+  </div>
+  <div class="next-row"><span><svg aria-hidden="true"><use href="#i-file"/></svg>Exploring? Edit the sample, or upload your own design.</span><button class="primary" id="goRecipients">Next: add participants<svg aria-hidden="true"><use href="#i-arrow"/></svg></button></div>
+ </section>
+ <section id="recipientsPanel" class="tab-panel" hidden>
+  <div class="data-layout"><aside class="panel data-tools"><h2>Add your participant list</h2><p>Use one participant per row, with column headings in the first row.</p><button class="primary full" id="importRecipients"><svg><use href="#i-upload"/></svg>Upload Excel or CSV</button><p class="small muted">.xlsx, .xls, .csv · Max. 10 MB<br>Up to 500 participants per project</p><button class="text-button" id="sampleCsv"><svg><use href="#i-download"/></svg>Download sample CSV</button><hr><h3>Using Google Forms?</h3><p>Download your responses spreadsheet as Excel or CSV, then upload it here.</p><p class="small muted">Upload a fresh copy when your responses change.</p><hr><button class="outline full" id="clearRecipients">Clear participant list</button></aside>
+   <div class="panel data-main"><div class="data-header"><div><h2>Participants <span id="tableCount" class="count-pill">3</span></h2><p id="dataFilename">Sample participants · replace with your own list</p></div><button class="outline" id="importRecipients2">Replace list</button></div>
+    <div class="mapping-row"><div><label for="sheetSelect">Worksheet</label><select id="sheetSelect"></select></div><div><label for="nameColumn">Participant name column</label><select id="nameColumn"></select></div><div class="search-group"><label for="searchParticipants">Find a participant</label><input id="searchParticipants" placeholder="Search your list…" type="search"></div></div>
+    <div id="dataWarnings" class="notice" hidden></div><div class="table-scroll"><table><thead id="tableHead"></thead><tbody id="tableBody"></tbody></table></div><div id="tableFooter" class="table-footer"></div>
+   </div></div><div class="next-row"><button class="text-button" data-go="design">Back to design</button><button class="primary" id="goExport">Review certificates<svg><use href="#i-arrow"/></svg></button></div>
+ </section>
+ <section id="exportPanel" class="tab-panel" hidden><div class="export-layout"><div class="panel export-review"><span class="export-seal"><svg><use href="#i-award"/></svg></span><h2>One final check</h2><p>Confirm your design and participant list before you download.</p><dl class="review-list"><div><dt>Certificate design</dt><dd id="reviewTemplate"></dd></div><div><dt>Participants</dt><dd id="reviewRecipients"></dd></div><div><dt>Personalized fields</dt><dd id="reviewFields"></dd></div></dl><div id="exportWarnings" class="notice" hidden></div><button class="outline" id="backDesign">Review design</button></div><div class="panel export-options"><h2>Download certificates</h2><label class="download-choice"><input type="radio" name="format" value="combined" checked><span><strong>One combined PDF</strong><small>One certificate per page. Ready to print together.</small></span><span class="format-tag">PDF</span></label><label class="download-choice"><input type="radio" name="format" value="zip"><span><strong>Individual PDFs in a ZIP</strong><small>A separate PDF named for each participant.</small></span><span class="format-tag">ZIP</span></label><p class="tip">Every row becomes a certificate. Review missing and repeated names in your participant list.</p><button class="primary full big" id="generate"><svg><use href="#i-download"/></svg><span id="generateLabel">Generate certificates</span></button><div id="exportProgress" hidden><progress id="progressBar" max="100" value="0"></progress><p id="progressText" role="status"></p><button class="text-button" id="cancelExport">Cancel generation</button></div><div id="exportSuccess" class="success-box" hidden role="status"></div><p class="small muted">Keep your work: <button class="inline-link" id="saveProject2">save this project</button> to reopen it later. The saved file includes your design and participant data.</p></div></div></section>
+ <footer><span>BRSA Studio</span><span>Save your project before closing to keep your changes.</span><button class="inline-link" id="resetSample">Load sample project</button></footer>
+ </div>
+</main>
+<input type="file" id="templateFile" accept="image/png,image/jpeg,application/pdf,.pdf" hidden><input type="file" id="recipientsFile" accept=".xlsx,.xls,.csv" hidden><input type="file" id="projectFile" accept=".json,.certstudio" hidden>
+<div class="toast" id="toast" role="status" hidden></div><dialog id="helpDialog"><button class="dialog-close" id="closeHelp" aria-label="Close help">×</button><h2>From design to a roomful of certificates.</h2><ol><li><strong>Upload your design.</strong> Use a PNG, JPG, or a PDF. For PDFs, the first page is the template.</li><li><strong>Import participants.</strong> Upload an Excel file or a CSV. For Google Forms, export the linked response spreadsheet first.</li><li><strong>Map your fields.</strong> Add text fields, choose a spreadsheet column or type fixed text, then drag them into place. Use percentage controls for precise placement.</li><li><strong>Review and download.</strong> Browse participants in the preview, then generate one PDF or a ZIP of separate PDFs.</li></ol><p>Your files are processed in this browser. Save a project file to keep your work before closing the page. Standard fonts keep PDF text reliable. Characters outside the standard encoding use browser text rendering.</p><p class="small muted">Jata Negara artwork by <a href="https://commons.wikimedia.org/wiki/File:Jata_MalaysiaV2.svg" target="_blank" rel="noopener noreferrer">Serodja, Wikimedia Commons</a>, licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>. Artwork unchanged.</p><button class="primary" id="closeHelp2">Start creating</button></dialog>
+<script type="module" src="./app.js"></script>
+</body></html>

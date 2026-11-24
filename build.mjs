@@ -1,6 +1,10 @@
 import { build } from 'esbuild';
 import { copyFile, mkdir, cp } from 'node:fs/promises';
 await mkdir('dist',{recursive:true});
+await copyFile('src/index.html','dist/index.html');
+await copyFile('src/style.css','dist/style.css');
+await copyFile('src/workspace.css','dist/workspace.css');
+await cp('src/assets','dist/assets',{recursive:true});
 await build({entryPoints:['src/app.mjs'],outfile:'dist/app.js',bundle:true,format:'esm',target:'es2022',minify:true,legalComments:'eof'});
 await copyFile('node_modules/pdfjs-dist/build/pdf.worker.min.mjs','dist/pdf.worker.min.mjs');
 await cp('node_modules/pdfjs-dist/standard_fonts','dist/standard_fonts',{recursive:true});

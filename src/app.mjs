@@ -1,23 +1,27 @@
 import { importWorkbook, resolveText, validateRecipients, fitFontSize, buildPdf, sanitizeFilename, certificateFilenames, normalizePdf, missingFieldColumns } from './core.mjs';
 import * as pdfjs from 'pdfjs-dist/build/pdf.mjs';
 import JSZip from 'jszip';
+import { parseRoute, projectReadiness, createSession } from './workspace.mjs';
 
 pdfjs.GlobalWorkerOptions.workerSrc=new URL('./pdf.worker.min.mjs',location.href).href;
 const $=id=>document.getElementById(id);
-const state={projectName:'Program certificates',template:null,fields:[],sheets:[],sheetIndex:0,nameColumn:'Full name',recipientIndex:0,selectedId:null,filename:'Sample participants',sample:true,fonts:{},fontName:'',busy:false,dirty:false};
+const state={projectName:'Program certificates',template:null,fields:[],sheets:[],sheetIndex:0,nameColumn:'Full name',recipientIndex:0,selectedId:null,filename:'Sample participants',sample:true,sampleTemplate:true,sampleParticipants:true,fonts:{},fontName:'',busy:false,dirty:false};
+const session=createSession();
+let activeArea='dashboard';
 const fonts={};let toastTimer,abortController,backgroundImage,renderVersion=0;
 const currentSheet=()=>state.sheets[state.sheetIndex]??{headers:[],rows:[],rowNumbers:[]};
 const currentField=()=>state.fields.find(f=>f.id===state.selectedId);
 function node(tag,text,className){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(className)n.className=className;return n;}
 function option(text,value){const n=node('option',text);n.value=value;return n;}
 function notice(message,error=false){clearTimeout(toastTimer);$('toast').textContent=message;$('toast').classList.toggle('error',error);$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,error?10000:5000);}
-function changed(){state.dirty=true;state.sample=false;$('projectBadge').textContent='Unsaved project';$('projectBadge').hidden=false;$('exportSuccess').hidden=true;}
+function changed(){state.dirty=true;state.sample=false;$('projectBadge').textContent='Unsaved project';$('projectBadge').hidden=false;$('exportSuccess').hidden=true;renderDashboard();}
 function toBase64(bytes){let s='';for(let i=0;i<bytes.length;i+=16384)s+=String.fromCharCode(...bytes.subarray(i,i+16384));return btoa(s);}
 function fromBase64(s){return Uint8Array.from(atob(s),c=>c.charCodeAt(0));}
 function download(data,name,type){const blob=data instanceof Blob?data:new Blob([data],{type});const url=URL.createObjectURL(blob);const a=node('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
 function safeAction(fn){return async(...args)=>{try{await fn(...args);}catch(e){console.error(e);notice(e.message||'This file could not be read. Try a different file.',true);}};}
 function guardEdit(){if(state.busy){notice('Wait for generation to finish, or cancel it first.');return false;}return true;}
-function showTab(tab){
+function showTab(tab,updateRoute=true){
+ if(updateRoute){navigate(`certificates/${tab}`);return;}
  const copy={design:['Design your certificate','Make it personal. Start with a design, then add your participants.'],recipients:['Add your participants','Import your list, check the names, and preview any participant’s certificate.'],export:['Review & export','Check the details, choose a format, and download your certificates.']};
  for(const k of ['design','recipients','export'])$(`${k}Panel`).hidden=k!==tab;
  document.querySelectorAll('[data-tab]').forEach(b=>{const active=b.dataset.tab===tab;b.classList.toggle('active',active);if(active)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');});
@@ -84,7 +88,9 @@ function startDrag(e,f){
  const end=()=>{target.removeEventListener('pointermove',move);target.removeEventListener('pointerup',end);target.removeEventListener('pointercancel',end);changed();renderFields();};target.addEventListener('pointermove',move);target.addEventListener('pointerup',end);target.addEventListener('pointercancel',end);
 }
 async function renderBackground(){
- const version=++renderVersion,t=state.template,canvas=$('background');if(!t)return;
+ const version=++renderVersion,t=state.template,canvas=$('background');
+ $('emptyDesign').hidden=!!t;$('certificate').hidden=!t;$('toggleGuides').disabled=!t;
+ if(!t){canvas.width=0;canvas.height=0;$('fieldOverlay').replaceChildren();$('templateName').textContent='No design selected';$('templateSize').textContent='';$('templateDetail').textContent='Upload a background to begin';return;}
  $('certificate').style.aspectRatio=`${t.width}/${t.height}`;$('certificate').style.setProperty('--certificate-ratio',t.width/t.height);$('templateName').textContent=t.name;$('templateSize').textContent=`${Math.round(t.width*25.4/72)} × ${Math.round(t.height*25.4/72)} mm`;$('templateDetail').textContent=t.kind==='pdf'?'PDF · first page used':'Image · original design';
  if(t.kind==='pdf'){
   const doc=await pdfjs.getDocument({data:t.bytes.slice(),standardFontDataUrl:new URL('./standard_fonts/',location.href).href,cMapUrl:new URL('./cmaps/',location.href).href,cMapPacked:true}).promise;
@@ -109,11 +115,14 @@ async function sampleTemplate(){
  ctx.fillStyle='#9ba5ae';ctx.font='14px Arial';ctx.fillText('A milestone today. A possibility tomorrow.',w/2,1134);
  const blob=await new Promise(r=>c.toBlob(r,'image/png'));return {kind:'image',mime:'image/png',bytes:new Uint8Array(await blob.arrayBuffer()),width:841.89,height:595.28,name:'Studio sample'};
 }
-async function loadSample(){
+async function loadSample({navigateToEditor=true}={}){
  state.template=await sampleTemplate();state.sheets=[{name:'Participants',headers:['Full name','Program','Date','Email'],rows:[{'Full name':'Aina Sofea Abdullah',Program:'Leadership Development Program',Date:'26 October 2026',Email:'aina@example.com'},{'Full name':'Ahmad Farhan bin Ismail',Program:'Leadership Development Program',Date:'26 October 2026',Email:'farhan@example.com'},{'Full name':'Nur Amirah Zainal',Program:'Leadership Development Program',Date:'26 October 2026',Email:'amirah@example.com'}],rowNumbers:[2,3,4]}];
- state.nameColumn='Full name';state.sheetIndex=0;state.recipientIndex=0;state.fields=[{id:'name',label:'Participant name',kind:'column',value:'Full name',x:50,y:46.6,width:75,size:32,color:'#162d46',font:'serif',align:'center'},{id:'program',label:'Program title',kind:'column',value:'Program',x:50,y:63.7,width:78,size:17,color:'#162d46',font:'serif',align:'center'},{id:'date',label:'Completion date',kind:'column',value:'Date',x:73,y:82.6,width:26,size:11,color:'#162d46',font:'sans',align:'center'}];state.selectedId='name';state.sample=true;state.dirty=false;state.filename='Sample participants · replace with your own list';state.projectName='Program certificates';$('projectName').value=state.projectName;$('projectBadge').textContent='Sample project';$('searchParticipants').value='';$('exportSuccess').hidden=true;renderData();renderFieldList();renderInspector();await renderBackground();showTab('design');
+ state.nameColumn='Full name';state.sheetIndex=0;state.recipientIndex=0;state.fields=[{id:'name',label:'Participant name',kind:'column',value:'Full name',x:50,y:46.6,width:75,size:32,color:'#162d46',font:'serif',align:'center'},{id:'program',label:'Program title',kind:'column',value:'Program',x:50,y:63.7,width:78,size:17,color:'#162d46',font:'serif',align:'center'},{id:'date',label:'Completion date',kind:'column',value:'Date',x:73,y:82.6,width:26,size:11,color:'#162d46',font:'sans',align:'center'}];state.selectedId='name';state.sample=true;state.sampleTemplate=true;state.sampleParticipants=true;state.dirty=false;state.filename='Sample participants · replace with your own list';state.projectName='Program certificates';$('projectName').value=state.projectName;$('projectBadge').textContent='Sample project';$('searchParticipants').value='';$('exportSuccess').hidden=true;renderData();renderFieldList();renderInspector();await renderBackground();renderDashboard();if(navigateToEditor)showTab('design');
 }
-function renderReview(){const s=currentSheet();$('reviewTemplate').textContent=state.template?.name??'No template';$('reviewRecipients').textContent=`${s.rows.length} participants`;$('reviewFields').textContent=`${state.fields.length} text fields`;const issues=exportIssues();$('exportWarnings').hidden=!issues.length;$('exportWarnings').textContent=issues.join(' ');$('generate').disabled=state.busy||issues.length>0;}
+function renderReview(){const s=currentSheet();$('reviewTemplate').textContent=state.template?.name??'No template';$('reviewRecipients').textContent=`${s.rows.length} participants`;$('reviewFields').textContent=`${state.fields.length} text fields`;const issues=exportIssues();$('exportWarnings').hidden=!issues.length;$('exportWarnings').textContent=issues.join(' ');$('generate').disabled=state.busy||issues.length>0;
+ $('reviewChecks').replaceChildren(...readiness().map(item=>{const li=node('li'),a=node('a',item.label);a.href=`#certificates/${item.step}`;a.append(node('span',item.ready?'Ready':'Needs attention'));li.append(a);return li;}));
+ const sampleParts=[state.sampleTemplate?'sample design':'',state.sampleParticipants?'sample participants':''].filter(Boolean);$('sampleWarning').hidden=!sampleParts.length;$('sampleWarning').textContent=`You are using ${sampleParts.join(' and ')}. Replace the example content before creating your program's certificates.`;
+}
 function exportIssues(){const s=currentSheet(),issues=[];if(!state.template)issues.push('Upload a certificate design.');if(!s.rows.length)issues.push('Add participants.');if(!state.fields.length)issues.push('Add at least one text field.');const missing=validateRecipients(s.rows,state.nameColumn,s.rowNumbers);if(missing.length)issues.push(`Fix missing participant names in row${missing.length===1?'':'s'} ${missing.slice(0,8).join(', ')}.`);const unmapped=missingFieldColumns(state.fields,s.headers);if(unmapped.length)issues.push(`Map missing column${unmapped.length===1?'':'s'}: ${unmapped.join(', ')}.`);return issues;}
 async function generate(){
  if(state.busy)return;const issues=exportIssues();if(issues.length){notice(issues.join(' '),true);return;}
@@ -124,29 +133,30 @@ async function generate(){
   const args={template,fields,rows,rasterizeText,signal:abortController.signal};let bytes,type,ext;
   if(format==='combined'){bytes=await buildPdf({...args,onProgress:progress});type='application/pdf';ext='pdf';}
   else{const zip=new JSZip(),names=certificateFilenames(rows,state.nameColumn);for(let i=0;i<rows.length;i++){if(abortController.signal.aborted)throw new Error('Generation cancelled.');const pdf=await buildPdf({...args,rows:[rows[i]],startIndex:i});zip.file(names[i],pdf);progress(i+1,rows.length);await new Promise(r=>setTimeout(r,0));}bytes=await zip.generateAsync({type:'uint8array',compression:'STORE'});if(abortController.signal.aborted)throw new Error('Generation cancelled.');type='application/zip';ext='zip';}
-  download(bytes,`${sanitizeFilename(state.projectName)}.${ext}`,type);$('progressBar').value=100;$('exportSuccess').textContent=`${rows.length} certificates generated. Your ${ext.toUpperCase()} download is ready.`;$('exportSuccess').hidden=false;
+  if(abortController.signal.aborted)throw new Error('Generation cancelled.');
+  download(bytes,`${sanitizeFilename(state.projectName)}.${ext}`,type);session.exported(rows.length,ext.toUpperCase());renderDashboard();$('progressBar').value=100;$('exportSuccess').textContent=`${rows.length} certificates generated. Your ${ext.toUpperCase()} download is ready.`;$('exportSuccess').hidden=false;
  }catch(e){console.error(e);notice(e.message,true);}finally{state.busy=false;$('exportProgress').hidden=true;$('generateLabel').textContent='Generate certificates';renderReview();}
 }
-function saveProject(){if(!guardEdit())return;const data={app:'certificate-studio',version:1,projectName:state.projectName,template:{...state.template,bytes:toBase64(state.template.bytes)},fields:state.fields,sheets:state.sheets,sheetIndex:state.sheetIndex,nameColumn:state.nameColumn,filename:state.filename};download(JSON.stringify(data),`${sanitizeFilename(state.projectName)}.certstudio`,'application/json');state.dirty=false;$('projectBadge').textContent='Project saved';notice('Project file downloaded. It includes your template and participant data.');}
+function saveProject(){if(!guardEdit())return;const data={app:'certificate-studio',version:1,projectName:state.projectName,template:state.template?{...state.template,bytes:toBase64(state.template.bytes)}:null,fields:state.fields,sheets:state.sheets,sheetIndex:state.sheetIndex,nameColumn:state.nameColumn,filename:state.filename,sampleTemplate:state.sampleTemplate,sampleParticipants:state.sampleParticipants};download(JSON.stringify(data),`${sanitizeFilename(state.projectName)}.certstudio`,'application/json');state.dirty=false;$('projectBadge').textContent='Project saved';recordActivity('Project file saved');notice('Project file downloaded. It includes your template and participant data.');}
 async function restoreProject(file){
  if(file.size>45*1024*1024)throw new Error('Use a project file smaller than 45 MB.');const p=JSON.parse(await file.text());
- if(p.app!=='certificate-studio'||p.version!==1||!p.template||!Array.isArray(p.fields)||!Array.isArray(p.sheets)||p.fields.length>30||p.sheets.length>30)throw new Error('This is not a supported BRSA Studio project file.');
- if(!['pdf','image'].includes(p.template.kind)||typeof p.template.bytes!=='string'||!Number.isFinite(p.template.width)||p.template.width<=0||p.template.width>20000||!Number.isFinite(p.template.height)||p.template.height<=0||p.template.height>20000)throw new Error('This project has an invalid certificate template.');
+ if(p.app!=='certificate-studio'||p.version!==1||(p.template!==null&&!p.template)||!Array.isArray(p.fields)||!Array.isArray(p.sheets)||p.fields.length>30||p.sheets.length>30)throw new Error('This is not a supported BRSA Studio project file.');
+ if(p.template&&(!['pdf','image'].includes(p.template.kind)||typeof p.template.bytes!=='string'||!Number.isFinite(p.template.width)||p.template.width<=0||p.template.width>20000||!Number.isFinite(p.template.height)||p.template.height<=0||p.template.height>20000))throw new Error('This project has an invalid certificate template.');
  const fields=p.fields.map((f,i)=>{if(!['column','fixed'].includes(f.kind)||typeof f.value!=='string'||f.value.length>500||!['serif','sans','custom'].includes(f.font)||!['left','center','right'].includes(f.align)||!/^#[0-9a-f]{6}$/i.test(f.color))throw new Error('This project has an invalid text field.');for(const [key,min,max] of [['x',.5,99.5],['y',.5,99.5],['width',5,100],['size',6,120]]){if(!Number.isFinite(f[key])||f[key]<min||f[key]>max)throw new Error('This project has an out-of-range text field.');}return {...f,id:`restored-${i}`,label:String(f.label??'Text field').slice(0,60)};});
  const sheets=p.sheets.map(s=>{if(!Array.isArray(s.headers)||!Array.isArray(s.rows)||s.headers.length>100||s.rows.length>500||!s.headers.every(h=>typeof h==='string'&&h.length<1000)||new Set(s.headers).size!==s.headers.length)throw new Error('This project has an invalid participant list.');return {name:String(s.name??'Participants').slice(0,80),headers:s.headers,rows:s.rows.map(r=>Object.fromEntries(s.headers.map(h=>[h,String(r?.[h]??'').slice(0,10000)]))),rowNumbers:Array.isArray(s.rowNumbers)?s.rowNumbers:[]};});
- const template={kind:p.template.kind,mime:p.template.mime,name:String(p.template.name??'Certificate').slice(0,200),bytes:fromBase64(p.template.bytes),width:p.template.width,height:p.template.height};
+ const template=p.template?{kind:p.template.kind,mime:p.template.mime,name:String(p.template.name??'Certificate').slice(0,200),bytes:fromBase64(p.template.bytes),width:p.template.width,height:p.template.height}:null;
  // Validate external template/font data before replacing the current project.
- if(template.kind==='pdf')await pdfjs.getDocument({data:template.bytes.slice()}).promise.then(d=>d.destroy());else{const image=await createImageBitmap(new Blob([template.bytes],{type:template.mime}));image.close();}
+ if(template?.kind==='pdf')await pdfjs.getDocument({data:template.bytes.slice()}).promise.then(d=>d.destroy());else if(template){const image=await createImageBitmap(new Blob([template.bytes],{type:template.mime}));image.close();}
  let custom;
- state.template=template;state.fields=fields;state.sheets=sheets;state.sheetIndex=Number.isInteger(p.sheetIndex)&&sheets[p.sheetIndex]?p.sheetIndex:0;state.nameColumn=currentSheet().headers.includes(p.nameColumn)?p.nameColumn:detectName(currentSheet().headers);state.projectName=String(p.projectName??'Program certificates').slice(0,80);state.filename=String(p.filename??'Imported project');state.recipientIndex=0;state.selectedId=fields[0]?.id;state.fonts.custom=custom;state.fontName=String(p.fonts?.name??'');state.sample=false;state.dirty=false;$('projectName').value=state.projectName;$('projectBadge').textContent='Project opened';$('searchParticipants').value='';renderData();renderFieldList();renderInspector();await renderBackground();showTab('design');notice('Project opened.');
+ state.template=template;state.fields=fields;state.sheets=sheets;state.sheetIndex=Number.isInteger(p.sheetIndex)&&sheets[p.sheetIndex]?p.sheetIndex:0;state.nameColumn=currentSheet().headers.includes(p.nameColumn)?p.nameColumn:detectName(currentSheet().headers);state.projectName=String(p.projectName??'Program certificates').slice(0,80);state.filename=String(p.filename??'Imported project');state.recipientIndex=0;state.selectedId=fields[0]?.id;state.fonts.custom=custom;state.fontName=String(p.fonts?.name??'');state.sample=false;state.sampleTemplate=p.sampleTemplate===true||(p.sampleTemplate===undefined&&template?.name==='Studio sample');state.sampleParticipants=p.sampleParticipants===true||(p.sampleParticipants===undefined&&state.filename.startsWith('Sample participants'));state.dirty=false;$('projectName').value=state.projectName;$('projectBadge').textContent='Project opened';$('searchParticipants').value='';$('exportSuccess').hidden=true;renderData();renderFieldList();renderInspector();await renderBackground();recordActivity('Project file opened');showTab('design');notice('Project opened.');
 }
 
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.go)));
 for(const [id,tab] of [['goRecipients','recipients'],['goExport','export'],['topExport','export'],['backDesign','design']])$(id).addEventListener('click',()=>showTab(tab));
 $('toggleGuides').addEventListener('click',()=>{const clean=$('certificate').classList.toggle('clean-preview');$('toggleGuides').setAttribute('aria-pressed',String(clean));$('toggleGuides').setAttribute('aria-label',clean?'Show editing guides':'Preview without guides');$('toggleGuides').querySelector('span').textContent=clean?'Show guides':'Hide guides';$('canvasHint').querySelector('span').textContent=clean?'Finished preview. Show guides to position text.':'Drag text to position it. Long names resize to fit.';renderFields();});
 for(const [button,input] of [['templateUpload','templateFile'],['importRecipients','recipientsFile'],['importRecipients2','recipientsFile'],['openProject','projectFile']])$(button).addEventListener('click',()=>{if(guardEdit())$(input).click();});
-$('templateFile').addEventListener('change',safeAction(async e=>{const file=e.target.files[0];e.target.value='';if(!file||!guardEdit())return;if(file.size>15*1024*1024)throw new Error('Choose a certificate file smaller than 15 MB.');let template;const bytes=new Uint8Array(await file.arrayBuffer());if(file.type==='application/pdf'||/\.pdf$/i.test(file.name)){template=await normalizePdf(bytes);if(template.pageCount>1)notice(`Your PDF has ${template.pageCount} pages. The first page is used as the design.`);}else{if(!['image/png','image/jpeg'].includes(file.type))throw new Error('Choose a PNG, JPG, or PDF certificate design.');const image=await createImageBitmap(file);try{if(image.width*image.height>40000000)throw new Error('Use a design smaller than 40 megapixels.');const width=image.width>=image.height?841.89:595.28;template={kind:'image',mime:file.type,bytes,width,height:width*image.height/image.width};}finally{image.close();}}template.name=file.name;state.template=template;changed();await renderBackground();}));
-$('recipientsFile').addEventListener('change',safeAction(async e=>{const file=e.target.files[0];e.target.value='';if(!file||!guardEdit())return;if(file.size>10*1024*1024)throw new Error('Choose a spreadsheet smaller than 10 MB.');const wb=importWorkbook(new Uint8Array(await file.arrayBuffer()));state.sheets=wb.sheets;state.filename=file.name;$('searchParticipants').value='';selectSheet(Math.max(0,state.sheets.findIndex(s=>s.rows.length)));notice(`Imported ${currentSheet().rows.length} participants. Check the name column, then review your text fields.`);showTab('recipients');}));
+$('templateFile').addEventListener('change',safeAction(async e=>{const file=e.target.files[0];e.target.value='';if(!file||!guardEdit())return;if(file.size>15*1024*1024)throw new Error('Choose a certificate file smaller than 15 MB.');let template;const bytes=new Uint8Array(await file.arrayBuffer());if(file.type==='application/pdf'||/\.pdf$/i.test(file.name)){template=await normalizePdf(bytes);if(template.pageCount>1)notice(`Your PDF has ${template.pageCount} pages. The first page is used as the design.`);}else{if(!['image/png','image/jpeg'].includes(file.type))throw new Error('Choose a PNG, JPG, or PDF certificate design.');const image=await createImageBitmap(file);try{if(image.width*image.height>40000000)throw new Error('Use a design smaller than 40 megapixels.');const width=image.width>=image.height?841.89:595.28;template={kind:'image',mime:file.type,bytes,width,height:width*image.height/image.width};}finally{image.close();}}template.name=file.name;state.template=template;state.sampleTemplate=false;changed();await renderBackground();recordActivity('Certificate design uploaded');}));
+$('recipientsFile').addEventListener('change',safeAction(async e=>{const file=e.target.files[0];e.target.value='';if(!file||!guardEdit())return;if(file.size>10*1024*1024)throw new Error('Choose a spreadsheet smaller than 10 MB.');const wb=importWorkbook(new Uint8Array(await file.arrayBuffer()));if(state.dirty&&currentSheet().rows.length&&!confirm('Replace the participant list in this unsaved project?'))return;state.sheets=wb.sheets;state.sampleParticipants=false;state.filename=file.name;$('searchParticipants').value='';selectSheet(Math.max(0,state.sheets.findIndex(s=>s.rows.length)));recordActivity('Participant list imported');notice(`Imported ${currentSheet().rows.length} participants. Check the name column, then review your text fields.`);showTab('recipients');}));
 $('projectFile').addEventListener('change',safeAction(async e=>{const file=e.target.files[0];e.target.value='';if(!file||!guardEdit())return;if(state.dirty&&!confirm('Open this project and replace your unsaved work?'))return;await restoreProject(file);}));
 $('sheetSelect').addEventListener('change',()=>{if(guardEdit())selectSheet(Number($('sheetSelect').value));});
 $('nameColumn').addEventListener('change',()=>{if(!guardEdit())return;const old=state.nameColumn;state.nameColumn=$('nameColumn').value;for(const f of state.fields)if(f.kind==='column'&&f.value===old)f.value=state.nameColumn;changed();renderData();renderFieldList();renderInspector();renderFields();});
@@ -167,8 +177,8 @@ $('projectName').addEventListener('input',()=>{if(guardEdit()){state.projectName
 for(const id of ['saveProject','saveProject2'])$(id).addEventListener('click',safeAction(saveProject));
 $('generate').addEventListener('click',generate);$('cancelExport').addEventListener('click',()=>abortController?.abort());
 $('sampleCsv').addEventListener('click',()=>download('\ufeffFull name,Program,Date,Email\r\nAina Sofea Abdullah,Leadership Development Program,26 October 2026,aina@example.com\r\nAhmad Farhan bin Ismail,Leadership Development Program,26 October 2026,farhan@example.com\r\n','sample-participants.csv','text/csv;charset=utf-8'));
-$('clearRecipients').addEventListener('click',()=>{if(!guardEdit())return;if(!confirm('Clear the participant list from this project?'))return;state.sheets=[{name:'Participants',headers:['Full name','Program','Date'],rows:[],rowNumbers:[]}];state.sheetIndex=0;state.nameColumn='Full name';state.filename='No file uploaded';changed();renderData();renderInspector();renderFields();});
-$('resetSample').addEventListener('click',safeAction(async()=>{if(!guardEdit())return;if(state.dirty&&!confirm('Replace your current work with the sample project? Save it first if you want to keep it.'))return;await loadSample();}));
+$('clearRecipients').addEventListener('click',()=>{if(!guardEdit())return;if(!confirm('Clear the participant list from this project?'))return;state.sheets=[{name:'Participants',headers:['Full name','Program','Date'],rows:[],rowNumbers:[]}];state.sheetIndex=0;state.nameColumn='Full name';state.filename='No file uploaded';state.sampleParticipants=false;changed();renderData();renderInspector();renderFields();});
+$('resetSample').addEventListener('click',safeAction(async()=>{if(!guardEdit())return;if(state.dirty&&!confirm('Replace your current work with the sample project? Save it first if you want to keep it.'))return;await loadSample();recordActivity('Sample project loaded');}));
 $('helpBtn').addEventListener('click',()=>$('helpDialog').showModal());for(const id of ['closeHelp','closeHelp2'])$(id).addEventListener('click',()=>$('helpDialog').close());
 window.addEventListener('beforeunload',e=>{if(state.dirty){e.preventDefault();e.returnValue='';}});
 new ResizeObserver(()=>renderFields()).observe($('certificate'));
@@ -180,5 +190,85 @@ async function rasterizeText({text,font,size,maxWidth,maxHeight,color}){
  c.width=Math.ceil(width*scale);c.height=Math.ceil(height*scale);ctx.font=`${size*scale}px "${family}"`;ctx.fillStyle=color;ctx.textBaseline='middle';ctx.fillText(text,0,c.height/2);
  const blob=await new Promise(r=>c.toBlob(r,'image/png'));return {bytes:new Uint8Array(await blob.arrayBuffer()),width:c.width/scale,height:c.height/scale};
 }
-async function init(){await loadSample();}
+function readiness(){return projectReadiness({template:state.template,fields:state.fields,sheet:currentSheet(),nameColumn:state.nameColumn});}
+
+function recordActivity(message){session.record(message);renderDashboard();}
+
+function renderDashboard(){
+ const sheet=currentSheet(),checks=readiness();
+ $('dashParticipants').textContent=sheet.rows.length;
+ $('dashParticipantNote').textContent=state.sampleParticipants?'Sample participants':'Current worksheet';
+ $('dashCertificates').textContent=session.certificates;$('dashBatches').textContent=session.batches;
+ const canContinue=!state.sample||state.dirty;
+ $('dashboardNew').replaceChildren();const actionIcon=document.createElementNS('http://www.w3.org/2000/svg','svg'),use=document.createElementNS('http://www.w3.org/2000/svg','use');actionIcon.setAttribute('aria-hidden','true');use.setAttribute('href',canContinue?'#i-arrow':'#i-plus');actionIcon.append(use);$('dashboardNew').append(actionIcon,document.createTextNode(canContinue?'Continue certificates':'Create certificates'));
+ $('dashProjectName').textContent=state.projectName||'Untitled project';
+ $('dashProjectDetail').textContent=`${state.template?.name??'No design selected'} · ${state.fields.length} text fields`;
+ $('dashProjectStatus').textContent=state.dirty?'Unsaved changes':state.sampleParticipants||state.sampleTemplate?'Example content':'Current project';
+ $('dashSaveNote').textContent=state.dirty?'You have unsaved changes. Download a project file to keep them.':'Projects stay in memory. Save a file before closing this page.';
+ $('readinessCount').textContent=`${checks.filter(c=>c.ready).length} / ${checks.length}`;
+ $('readinessList').replaceChildren(...checks.map(c=>{const li=node('li'),a=node('a');a.href=`#certificates/${c.step}`;a.append(node('span',c.ready?'✓':'•','readiness-marker'+(c.ready?' ready':'')));const text=node('span');text.append(node('strong',c.label),node('small',c.detail));a.append(text);li.append(a);return li;}));
+ const activity=session.activity.map(item=>{const li=node('li'),time=node('time',item.time.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));time.dateTime=item.time.toISOString();li.append(node('span',item.message),time);return li;});
+ if(!activity.length)activity.push(node('li','Your activity will appear here when you import a list, save a project, or generate certificates.','activity-empty'));
+ $('activityList').replaceChildren(...activity);
+}
+
+function navigate(route){
+ if(location.hash===`#${route}`)applyRoute();else location.hash=route;
+}
+
+function closeNavigation(restoreFocus=false){
+ $('sidebar').classList.remove('is-open');$('menuToggle').setAttribute('aria-expanded','false');$('navBackdrop').hidden=true;document.body.classList.remove('nav-open');
+ $('mainContent').inert=false;document.querySelector('.app-header').inert=false;
+ if(restoreFocus)$('menuToggle').focus();
+}
+
+function applyRoute({focus=true}={}){
+ const route=parseRoute(location.hash);activeArea=route.area;
+ $('dashboardView').hidden=route.area!=='dashboard';$('certificateView').hidden=route.area!=='certificates';$('plannedView').hidden=!['events','links'].includes(route.area);
+ const titles={dashboard:'Dashboard',certificates:'Certificates',events:'Event registration',links:'URL shortener'};
+ $('areaTitle').textContent=titles[route.area];document.title=`${titles[route.area]} · BRSA Studio`;
+ document.querySelectorAll('[data-area]').forEach(a=>{if(a.dataset.area===route.area)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
+ if(route.area==='certificates')showTab(route.step,false);
+ if(route.area==='dashboard')renderDashboard();
+ if(route.area==='events'||route.area==='links'){
+  const events=route.area==='events';$('plannedTitle').textContent=titles[route.area];$('plannedIcon').setAttribute('href',events?'#i-calendar':'#i-link');
+  $('plannedDescription').textContent=events?'Bring program sign-ups, participant lists and registration details into your division workspace.':'Make your division’s forms, event pages and resources easier to share with short, memorable links.';
+  $('plannedFeatures').replaceChildren(...(events?['Create a public registration form for a program','Review registrations and manage participant lists','Bring confirmed participants into certificate projects']:['Create short links for forms and resources','Manage link destinations in one place','Share links and review their usage']).map(text=>node('li',text)));
+ }
+ closeNavigation();if(focus){$('mainContent').focus({preventScroll:true});window.scrollTo(0,0);}
+}
+
+async function newProject(){
+ if(!guardEdit())return;
+ if(state.dirty&&!confirm('Start a new project and replace your unsaved work? Save a project file first to keep it.'))return;
+ Object.assign(state,{projectName:'Untitled certificate project',template:null,fields:[{id:crypto.randomUUID(),label:'Participant name',kind:'column',value:'Full name',x:50,y:50,width:75,size:32,color:'#162d46',font:'serif',align:'center'}],sheets:[{name:'Participants',headers:['Full name','Program','Date'],rows:[],rowNumbers:[]}],sheetIndex:0,nameColumn:'Full name',recipientIndex:0,filename:'No file uploaded',sample:false,sampleTemplate:false,sampleParticipants:false,dirty:true});
+ state.selectedId=state.fields[0].id;$('projectName').value=state.projectName;$('searchParticipants').value='';changed();renderData();renderFieldList();renderInspector();await renderBackground();recordActivity('New certificate project started');showTab('design');
+}
+
+async function init(){
+ const review=node('ul',undefined,'review-checks');review.id='reviewChecks';$('exportWarnings').before(review);
+ const warning=node('div',undefined,'sample-warning');warning.id='sampleWarning';$('exportPanel').prepend(warning);
+ document.querySelectorAll('[data-tab="export"] .step-copy strong').forEach(el=>el.textContent='Review & download');
+ $('dashboardNew').addEventListener('click',safeAction(()=>!state.sample||state.dirty?showTab('design'):newProject()));$('newProject').addEventListener('click',safeAction(newProject));
+ $('dashOpen').addEventListener('click',()=>$('openProject').click());$('dashSave').addEventListener('click',safeAction(saveProject));
+ $('emptyUpload').addEventListener('click',()=>$('templateUpload').click());
+ for(const id of ['dashboardSample','editorSample'])$(id).addEventListener('click',()=>$('resetSample').click());
+ $('menuToggle').addEventListener('click',()=>{
+  $('sidebar').classList.add('is-open');$('menuToggle').setAttribute('aria-expanded','true');$('navBackdrop').hidden=false;document.body.classList.add('nav-open');$('mainContent').inert=true;document.querySelector('.app-header').inert=true;$('closeNav').focus();
+ });
+ $('navBackdrop').addEventListener('click',()=>closeNavigation(true));$('closeNav').addEventListener('click',()=>closeNavigation(true));
+ document.addEventListener('keydown',e=>{
+  if(!$('sidebar').classList.contains('is-open'))return;
+  if(e.key==='Escape'){e.preventDefault();closeNavigation(true);}
+  if(e.key==='Tab'){
+   const controls=[...$('sidebar').querySelectorAll('a,button')],first=controls[0],last=controls.at(-1);
+   if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+  }
+ });
+ window.matchMedia('(min-width:761px)').addEventListener('change',e=>{if(e.matches)closeNavigation();});
+ window.addEventListener('hashchange',()=>applyRoute());
+ document.querySelectorAll('.sidebar a').forEach(a=>a.addEventListener('click',()=>{if(a.hash===location.hash)applyRoute();}));
+ document.querySelector('.skip-link').addEventListener('click',e=>{e.preventDefault();$('mainContent').focus();});
+ await loadSample({navigateToEditor:false});applyRoute({focus:false});
+}
 safeAction(init)();

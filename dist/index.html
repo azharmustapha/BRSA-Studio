@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#162d46"><meta name="description" content="Turn your certificate design and participant list into personalized program certificates."><title>BRSA Studio</title><link rel="icon" type="image/svg+xml" href="./assets/jata-negara.svg"><link rel="stylesheet" href="./style.css"></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#17344d"><meta name="description" content="BRSA's workspace for certificates, programs and everyday division tools."><title>BRSA Studio</title><link rel="icon" type="image/svg+xml" href="./assets/jata-negara.svg"><link rel="stylesheet" href="./style.css"><link rel="stylesheet" href="./workspace.css"></head>
 <body>
 <svg class="svg-defs" xmlns="http://www.w3.org/2000/svg"><defs>
 <symbol id="i-award" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="m8.5 12-1 9 4.5-3 4.5 3-1-9"/></symbol>
@@ -14,19 +14,48 @@
 <symbol id="i-save" viewBox="0 0 24 24"><path d="M4 3h13l3 3v15H4ZM8 3v6h8V3M8 21v-7h8v7"/></symbol>
 <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
 <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+<symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18m-13 5h2m4 0h2"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="m10 13 4-4m-6 7-2 2a4 4 0 0 1-6-6l5-5a4 4 0 0 1 6 0m2 1 2-2a4 4 0 0 1 6 6l-5 5a4 4 0 0 1-6 0" transform="translate(1 0)"/></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
 </defs></svg>
-<header class="app-header">
- <a class="brand" href="./" aria-label="BRSA Studio home"><span class="brand-mark"><img src="./assets/jata-negara.svg" alt="Jata Negara Malaysia" width="64" height="52"></span><span>BRSA <strong>Studio</strong><small>Certificate workspace</small></span></a>
- <div class="local-note"><span class="green-dot"></span> Your files stay on this device</div>
- <nav class="project-actions" aria-label="Project actions">
- <button class="header-button" id="openProject" aria-label="Open project" title="Open a saved project"><svg aria-hidden="true"><use href="#i-folder"/></svg><span>Open project</span></button>
- <button class="header-button save-button" id="saveProject" aria-label="Save project" title="Download your project to save your work"><svg aria-hidden="true"><use href="#i-save"/></svg><span>Save project</span></button>
- <button class="help-button" id="helpBtn" aria-label="How it works" title="How it works">?</button>
+<a href="#mainContent" class="skip-link">Skip to content</a>
+<button id="navBackdrop" class="nav-backdrop" aria-label="Close navigation" hidden tabindex="-1"></button>
+<aside id="sidebar" class="sidebar" aria-label="Studio navigation">
+ <a class="brand" href="#dashboard" aria-label="BRSA Studio dashboard"><span class="brand-mark"><img src="./assets/jata-negara.svg" alt="Jata Negara Malaysia" width="64" height="52"></span><span>BRSA <strong>Studio</strong><small>Division workspace</small></span></a>
+ <button id="closeNav" class="close-nav" aria-label="Close navigation">×</button>
+ <div class="nav-section-label">Workspace</div>
+ <nav class="side-links" aria-label="Main navigation">
+  <a href="#dashboard" data-area="dashboard"><svg aria-hidden="true"><use href="#i-grid"/></svg>Dashboard</a>
+  <a href="#certificates/design" data-area="certificates"><svg aria-hidden="true"><use href="#i-award"/></svg>Certificates</a>
+  <a href="#events" data-area="events"><svg aria-hidden="true"><use href="#i-calendar"/></svg><span>Event registration</span><small>Planned</small></a>
+  <a href="#links" data-area="links"><svg aria-hidden="true"><use href="#i-link"/></svg><span>URL shortener</span><small>Planned</small></a>
  </nav>
+ <div class="sidebar-bottom"><svg aria-hidden="true"><use href="#i-check"/></svg><strong>Made for your bahagian</strong><p>One place for the work<br>that brings people together.</p><span>BRSA Studio</span></div>
+</aside>
+<header class="app-header">
+ <button id="menuToggle" class="icon-button" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar"><svg aria-hidden="true"><use href="#i-menu"/></svg></button>
+ <div class="breadcrumb">Workspace <span>/</span> <strong id="areaTitle">Dashboard</strong></div>
+ <div class="local-note"><span class="green-dot"></span> Your files stay on this device</div>
+ <button class="help-button" id="helpBtn" aria-label="How it works" title="How it works">?</button>
 </header>
-<main id="mainContent">
- <div class="page-content">
- <div class="page-heading"><div><h1 id="pageTitle">Design your certificate</h1><p id="pageDescription">Make it personal. Start with a design, then add your participants.</p></div><button class="primary" id="topExport"><svg aria-hidden="true"><use href="#i-download"/></svg>Review & export</button></div>
+<main id="mainContent" tabindex="-1">
+ <section id="dashboardView" class="page-content dashboard-view" aria-labelledby="dashboardTitle">
+  <div class="dashboard-heading"><div><p class="welcome-line">Welcome to BRSA Studio</p><h1 id="dashboardTitle">Your division. One workspace.</h1><p>Create certificates and keep your program work moving.</p></div><button class="primary" id="dashboardNew"><svg aria-hidden="true"><use href="#i-plus"/></svg>Create certificates</button></div>
+  <div class="metrics-strip" aria-label="Workspace summary"><div><span class="metric-icon"><svg aria-hidden="true"><use href="#i-users"/></svg></span><div><span>Current participants</span><strong id="dashParticipants">0</strong><small id="dashParticipantNote">Current worksheet</small></div></div><div><span class="metric-icon"><svg aria-hidden="true"><use href="#i-award"/></svg></span><div><span>Certificates generated</span><strong id="dashCertificates">0</strong><small>This session</small></div></div><div><span class="metric-icon"><svg aria-hidden="true"><use href="#i-download"/></svg></span><div><span>Completed exports</span><strong id="dashBatches">0</strong><small>This session</small></div></div></div>
+  <p class="session-note">Session totals reset when you refresh or close this page. Sample exports are included.</p>
+  <div class="dashboard-grid">
+   <section class="current-project dashboard-panel"><div class="section-heading"><h2>Certificate workspace</h2><span id="dashProjectStatus" class="badge">Sample project</span></div><div class="project-overview"><div class="project-art" aria-hidden="true"><div><svg><use href="#i-award"/></svg><span></span><i></i><i></i></div></div><div><h3 id="dashProjectName">Program certificates</h3><p id="dashProjectDetail">Your current certificate project</p><p class="save-reminder" id="dashSaveNote">Save your project file to keep your work.</p></div></div><div class="project-buttons"><a href="#certificates/design" class="primary" id="dashContinue">Continue certificates<svg aria-hidden="true"><use href="#i-arrow"/></svg></a><button class="outline" id="dashOpen"><svg aria-hidden="true"><use href="#i-folder"/></svg>Open project</button><button class="text-button" id="dashSave">Save project</button></div></section>
+   <section class="dashboard-panel readiness-panel"><div class="section-heading"><h2>Ready to generate?</h2><span id="readinessCount" class="count-pill">0 / 4</span></div><p>Check your current certificate project.</p><ul id="readinessList" class="readiness-list"></ul></section>
+  </div>
+  <section class="studio-tools" aria-labelledby="toolsTitle"><div class="section-heading"><div><h2 id="toolsTitle">Your studio tools</h2><p>Useful tools for the programs you run.</p></div></div><div class="tool-grid"><a class="tool-card available" href="#certificates/design"><span class="tool-icon"><svg aria-hidden="true"><use href="#i-award"/></svg></span><span class="tool-status">Available</span><h3>Certificate generator</h3><p>From your design and participant list to personalized certificates.</p><span class="tool-link">Open certificates <svg aria-hidden="true"><use href="#i-arrow"/></svg></span></a><a class="tool-card" href="#events"><span class="tool-icon"><svg aria-hidden="true"><use href="#i-calendar"/></svg></span><span class="tool-status planned">Planned</span><h3>Event registration</h3><p>A future home for program sign-ups and participant management.</p><span class="tool-link">View planned tool <svg aria-hidden="true"><use href="#i-arrow"/></svg></span></a><a class="tool-card" href="#links"><span class="tool-icon"><svg aria-hidden="true"><use href="#i-link"/></svg></span><span class="tool-status planned">Planned</span><h3>URL shortener</h3><p>Short, easy-to-share links for your division's forms and resources.</p><span class="tool-link">View planned tool <svg aria-hidden="true"><use href="#i-arrow"/></svg></span></a></div></section>
+  <div class="dashboard-grid bottom-grid"><section class="dashboard-panel"><div class="section-heading"><h2>Recent activity</h2><span class="muted small">This session</span></div><ul class="activity-list" id="activityList"></ul></section><section class="quick-guide"><h2>Your first certificates, in three steps.</h2><ol><li><strong>Choose your design</strong><span>Upload a blank certificate background.</span></li><li><strong>Add your participants</strong><span>Import an Excel or CSV list and check the names.</span></li><li><strong>Review and download</strong><span>Get one PDF or a ZIP of individual certificates.</span></li></ol><button class="text-button" id="dashboardSample">Explore the sample project</button></section></div>
+  <footer><span>BRSA Studio</span><span>Built for your division's everyday work.</span></footer>
+ </section>
+ <section id="plannedView" class="page-content planned-view" hidden aria-labelledby="plannedTitle"><a href="#dashboard" class="text-button">Back to dashboard</a><div class="planned-content"><span class="tool-icon"><svg aria-hidden="true"><use id="plannedIcon" href="#i-calendar"/></svg></span><span class="badge">Planned tool</span><h1 id="plannedTitle">Event registration</h1><p id="plannedDescription"></p><div class="planned-details"><h2>What this tool will help with</h2><ul id="plannedFeatures"></ul></div><p class="muted">This tool is not available yet. You can use the certificate generator today.</p><a href="#certificates/design" class="primary">Open certificates<svg aria-hidden="true"><use href="#i-arrow"/></svg></a></div></section>
+ <div class="page-content" id="certificateView" hidden>
+ <div class="certificate-heading"><div><p class="welcome-line">Certificate generator</p><h2>Create something worth recognising.</h2></div><nav class="project-actions" aria-label="Project actions"><button class="outline" id="newProject"><svg aria-hidden="true"><use href="#i-plus"/></svg>New project</button><button class="outline" id="openProject"><svg aria-hidden="true"><use href="#i-folder"/></svg>Open project</button><button class="outline" id="saveProject"><svg aria-hidden="true"><use href="#i-save"/></svg>Save project</button></nav></div>
+ <div class="page-heading"><div><h1 id="pageTitle">Design your certificate</h1><p id="pageDescription">Make it personal. Start with a design, then add your participants.</p></div><button class="primary" id="topExport"><svg aria-hidden="true"><use href="#i-download"/></svg>Review & download</button></div>
  <div class="project-line"><label for="projectName">Project name</label><input id="projectName" value="Program certificates" maxlength="80" aria-label="Project name"><span class="badge" id="projectBadge">Sample project</span><span class="project-hint" id="recipientCount">3 participants</span></div>
  <nav class="steps" aria-label="Certificate workflow"><button class="step active" data-tab="design" aria-current="step" aria-controls="designPanel"><span class="step-number">1</span><span class="step-copy"><strong>Design certificate</strong><small>Template & text fields</small></span></button><button class="step" data-tab="recipients" aria-controls="recipientsPanel"><span class="step-number">2</span><span class="step-copy"><strong>Add participants</strong><small>Import & check your list</small></span></button><button class="step" data-tab="export" aria-controls="exportPanel"><span class="step-number">3</span><span class="step-copy"><strong>Review & export</strong><small>Download your certificates</small></span></button></nav>
  <section id="designPanel" class="tab-panel">
@@ -40,7 +69,7 @@
     <button class="outline full" id="addField"><svg><use href="#i-plus"/></svg>Add text field</button>
    </aside>
    <div class="preview-workspace"><div class="canvas-toolbar"><span class="preview-title"><span class="green-dot"></span> Live preview</span><span id="templateSize">297 × 210 mm</span><button class="preview-toggle" id="toggleGuides" aria-label="Preview without guides" aria-pressed="false" title="Hide editing guides to see the finished certificate"><svg aria-hidden="true"><use href="#i-eye"/></svg><span>Hide guides</span></button></div>
-    <div class="canvas-area" id="canvasArea"><div class="certificate" id="certificate"><canvas id="background" aria-label="Certificate background"></canvas><div id="fieldOverlay"></div></div></div>
+    <div class="canvas-area" id="canvasArea"><div id="emptyDesign" class="empty-design" hidden><svg aria-hidden="true"><use href="#i-upload"/></svg><h3>Your certificate starts here</h3><p>Upload a PNG, JPG or PDF background,<br>then position your personalized text.</p><button class="primary" id="emptyUpload">Upload certificate design</button><button class="text-button" id="editorSample">Try the sample project</button></div><div class="certificate" id="certificate"><canvas id="background" aria-label="Certificate background"></canvas><div id="fieldOverlay"></div></div></div>
     <div class="preview-bottom"><span class="preview-person"><svg><use href="#i-users"/></svg><span>Previewing</span></span><button class="icon-button" id="prevRecipient" aria-label="Previous participant">‹</button><select id="previewRecipient" aria-label="Preview participant"></select><button class="icon-button" id="nextRecipient" aria-label="Next participant">›</button><span id="previewIndex">1 of 3</span></div>
     <div class="canvas-caption" id="canvasHint"><svg aria-hidden="true"><use href="#i-check"/></svg><span>Drag text to position it. Long names resize to fit.</span></div>
    </div>
